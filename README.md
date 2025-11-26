@@ -53,11 +53,11 @@ smartcracker "da39a3ee5e6b4b0d3255bfef95601890afd80709" sha1
 ```
 
 ## Algorithm Details
-1. **Initial Brute-force**: Tries prefixes of 1-3 characters (a-zA-Z0-9+-/*).
-2. **Wordlist Expansion**: If the prefix matches the start of a word (e.g., "Pr" -> "predator"), generates mutations.
-3. **Mutations**: Case variations, leet speak (e->3, o->0), alternating combinations.
-4. **Suffixes**: Adds common patterns (e.g., ".369", "/*-+").
-5. **Verification**: Computes hash of candidate and compares.
+1. **Initial Brute-force**: Tries prefixes of 1-3 characters (a-zA-Z0-9+-/*.,:;).
+2. **Wordlist Expansion**: If the prefix matches the start of a word (case-insensitive, e.g., "Pr" -> "predator"), generates mutations. Wordlist is structured by prefixes (e.g., ab, ac, ad, ae, af, pr) with 2-6 chars and 4-8 chars words, numeric lists (1-3, 4, 6 digits), alfanumeric with symbols.
+3. **Mutations**: Case variations (upper, lower, title, alternating), leet speak (e->3, o->0, i->1, etc.).
+4. **Suffixes**: Adds common patterns (e.g., ".369", "/*-+", ".369/*-+").
+5. **Verification**: Computes hash of candidate and compares. Alternates brute-force with wordlist for incremental building.
 
 ## Customization
 - **Add Words**: Modify `load_wordlist()` in `src/main.cpp`.

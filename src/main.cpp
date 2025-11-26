@@ -31,6 +31,12 @@ std::string compute_sha1(const std::string& input) {
     return std::string(shaString);
 }
 
+std::string to_lower(const std::string& s) {
+    std::string lower = s;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    return lower;
+}
+
 std::vector<std::string> generate_mutations(const std::string& word) {
     std::vector<std::string> mutations;
     mutations.push_back(word);
@@ -56,6 +62,16 @@ std::vector<std::string> generate_mutations(const std::string& word) {
     }
     mutations.push_back(leet);
 
+    // Title case (prima lettera maiuscola, resto minuscolo)
+    std::string title = word;
+    if (!title.empty()) {
+        title[0] = ::toupper(title[0]);
+        for (size_t i = 1; i < title.size(); ++i) {
+            title[i] = ::tolower(title[i]);
+        }
+    }
+    mutations.push_back(title);
+
     // Combinazioni (es. Pr0MpT)
     std::string mixed = word;
     for (size_t i = 0; i < mixed.size(); ++i) {
@@ -68,11 +84,40 @@ std::vector<std::string> generate_mutations(const std::string& word) {
 }
 
 std::vector<std::string> load_wordlist() {
-    // Lista breve built-in (aggiungi più parole se necessario)
+    // Lista built-in strutturata per prefissi (2-6 chars, poi 4-8 chars), numeriche, alfanumeriche
     return {
-        "prompt", "prisma", "primordiale", "primavera", "primo", "prato",
-        "predator", "predatore", "preda", "tor", "toro", "torta",
-        "password", "admin", "root", "user", "test", "ciao", "hello"
+        // Prefissi "ab" (2-6 chars)
+        "abete", "abito", "ab1t0", "Ab3t3", "abaco", "abate", "abuso", "abito", "abate", "abaco",
+        // Prefissi "ac" (2-6 chars)
+        "acro", "AC3t0", "Ac3", "Ace", "Acr0", "acido", "acqua", "acero", "acuto", "acqua",
+        // Prefissi "ad" (2-6 chars)
+        "adito", "Ad1t0", "Ad3", "Ade", "Adr0", "adobe", "adagio", "adore", "adobe", "adagio",
+        // Prefissi "ae" (2-6 chars)
+        "aereo", "A3r30", "A3r", "Aer", "A3r0", "aereo", "aereo", "aereo", "aereo", "aereo",
+        // Prefissi "af" (2-6 chars)
+        "afido", "Af1d0", "Af3", "Afe", "Afr0", "afido", "afido", "afido", "afido", "afido",
+        // Prefissi "pr" (2-6 chars, per predator)
+        "predator", "primo", "prato", "prisma", "primavera", "prompt", "principe", "pratica", "pronto", "principe",
+        // Parole 4-8 chars per "ab"
+        "abete", "abito", "abaco", "abate", "abuso", "abisso", "aborto", "abbono", "abbono", "abbono",
+        // Parole 4-8 chars per "ac"
+        "acido", "acqua", "acero", "acuto", "acacia", "accusa", "accusa", "accusa", "accusa", "accusa",
+        // Parole 4-8 chars per "ad"
+        "adobe", "adagio", "adore", "adesso", "adesso", "adesso", "adesso", "adesso", "adesso",
+        // Parole 4-8 chars per "ae"
+        "aereo", "aereo", "aereo", "aereo", "aereo", "aereo", "aereo", "aereo", "aereo",
+        // Parole 4-8 chars per "af"
+        "afido", "afido", "afido", "afido", "afido", "afido", "afido", "afido", "afido",
+        // Parole 4-8 chars per "pr"
+        "predator", "predatore", "preda", "principe", "pratica", "pronto", "principe", "principe", "principe", "principe",
+        // Numeriche 1-3 cifre
+        "123", "456", "789", "369", "258", "147", "000", "111", "222", "333",
+        // Numeriche 4 cifre (giorno/mese)
+        "0112", "0825", "0309", "1225", "0101", "1231", "0606", "0707", "0808", "0909",
+        // Numeriche 6 cifre (giorno/mese/anno attuale, es. 030925 per 03/09/2025)
+        "030925", "082525", "122525", "010125", "060625", "070725", "080825", "090925", "101025", "111125",
+        // Alfanumeriche con simboli 1-4 chars
+        "/*-+.", ":;,", "/*-+.:;", "369/*-+.", "123.:;", "abc/*-+.", "xyz.:;", "qwerty/*-+.", "asdf.:;", "zxcv.:;"
     };
 }
 
@@ -80,7 +125,7 @@ std::vector<std::string> generate_suffixes() {
     // Suffissi comuni (numeri, simboli)
     return {
         ".123", ".369", "/*-+", ".abc", ".xyz", "123", "369", "/*-+",
-        "!@#", "$%^", "&*()", "qwerty", "asdf", "zxcv"
+        "!@#", "$%^", "&*()", "qwerty", "asdf", "zxcv", ".369/*-+"
     };
 }
 
@@ -89,7 +134,7 @@ std::string crack_password(const std::string& target_hash, const std::string& ha
     auto suffixes = generate_suffixes();
 
     // Caratteri per brute-force iniziale
-    std::string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-/*";
+    std::string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-/*.,:;";
 
     // Fase 1: Brute-force per prefissi brevi (lunghezza 1-3)
     for (size_t len = 1; len <= 3; ++len) {
@@ -102,9 +147,9 @@ std::string crack_password(const std::string& target_hash, const std::string& ha
                     if (len > 2) {
                         for (size_t k = 0; k < chars.size(); ++k) {
                             prefix[2] = chars[k];
-                            // Controlla se il prefisso matcha inizio di parole in wordlist
+                            // Controlla se il prefisso matcha inizio di parole in wordlist (case-insensitive)
                             for (const auto& word : wordlist) {
-                                if (word.substr(0, len) == prefix) {
+                                if (to_lower(word).substr(0, len) == to_lower(prefix)) {
                                     // Genera mutazioni della parola completa
                                     auto mutations = generate_mutations(word);
                                     for (const auto& mut : mutations) {
@@ -123,7 +168,7 @@ std::string crack_password(const std::string& target_hash, const std::string& ha
                     } else {
                         // Stesso per len=2
                         for (const auto& word : wordlist) {
-                            if (word.substr(0, len) == prefix) {
+                            if (to_lower(word).substr(0, len) == to_lower(prefix)) {
                                 auto mutations = generate_mutations(word);
                                 for (const auto& mut : mutations) {
                                     for (const auto& suff : suffixes) {
@@ -139,7 +184,7 @@ std::string crack_password(const std::string& target_hash, const std::string& ha
             } else {
                 // Stesso per len=1
                 for (const auto& word : wordlist) {
-                    if (word.substr(0, len) == prefix) {
+                    if (to_lower(word).substr(0, len) == to_lower(prefix)) {
                         auto mutations = generate_mutations(word);
                         for (const auto& mut : mutations) {
                             for (const auto& suff : suffixes) {
